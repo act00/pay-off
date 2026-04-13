@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>PayOFF - Personal Finance Tracker</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💳</text></svg>"/>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:#f0f4f8;font-family:'DM Sans','Helvetica Neue',sans-serif;}
+#loading-msg{display:flex;align-items:center;justify-content:center;min-height:100vh;color:#00c9a7;font-size:14px;}
+#error-msg{display:none;align-items:center;justify-content:center;min-height:100vh;color:#ff5a6e;font-size:14px;padding:20px;text-align:center;flex-direction:column;gap:12px;}
+::-webkit-scrollbar{width:4px;}::-webkit-scrollbar-track{background:transparent;}::-webkit-scrollbar-thumb{background:#94a3b8;border-radius:4px;}
+@keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+@keyframes gradientMove{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}
+.fade-up{animation:fadeUp .45s ease both}.fade-up-1{animation-delay:.05s}.fade-up-2{animation-delay:.1s}.fade-up-3{animation-delay:.15s}.fade-up-4{animation-delay:.2s}
+.payoff-app{font-family:'DM Sans','Helvetica Neue',sans-serif;background:#f0f4f8;min-height:100vh;color:#0a1628;font-size:14px;max-width:520px;margin:0 auto;padding-bottom:80px;position:relative;overflow-x:hidden;}
+.payoff-app::before{content:'';position:fixed;top:-120px;right:-120px;width:400px;height:400px;border-radius:50%;background:radial-gradient(circle,rgba(0,201,167,0.08) 0%,transparent 70%);pointer-events:none;z-index:0;}
+.payoff-app::after{content:'';position:fixed;bottom:-80px;left:-80px;width:300px;height:300px;border-radius:50%;background:radial-gradient(circle,rgba(0,87,255,0.06) 0%,transparent 70%);pointer-events:none;z-index:0;}
+.header-gradient{background:linear-gradient(135deg,#00c9a7 0%,#0057ff 50%,#7c3aed 100%);background-size:200% 200%;animation:gradientMove 6s ease infinite;padding:28px 20px 20px;color:#fff;position:relative;z-index:1;border-radius:0 0 24px 24px;margin-bottom:16px;box-shadow:0 8px 32px rgba(0,87,255,0.15);}
+.header-gradient h1{font-family:'Outfit',sans-serif;font-size:28px;font-weight:900;letter-spacing:3px;margin:0;text-shadow:0 2px 12px rgba(0,0,0,0.15);}
+.header-gradient p{font-size:11px;opacity:.8;letter-spacing:1.5px;margin-top:2px;font-weight:500;}
+.nav-pills{display:flex;gap:6px;padding:0 16px 12px;position:sticky;top:0;z-index:10;background:linear-gradient(180deg,#f0f4f8 60%,transparent);padding-top:8px;}
+.nav-pill{flex:1;padding:10px 0;border:none;border-radius:10px;font-size:12px;font-weight:600;cursor:pointer;transition:all .25s;font-family:'DM Sans',sans-serif;}
+.nav-pill.active{background:linear-gradient(135deg,#00c9a7,#0057ff);color:#fff;box-shadow:0 8px 32px rgba(0,201,167,0.18);}
+.nav-pill:not(.active){background:#fff;color:#5a6a7e;border:1px solid rgba(0,30,60,0.07);}
+.glass-card{background:rgba(255,255,255,0.82);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid rgba(0,30,60,0.07);border-radius:16px;padding:18px;margin:0 16px 14px;box-shadow:0 1px 3px rgba(0,30,80,0.06),0 8px 24px rgba(0,30,80,0.04);position:relative;z-index:1;}
+.card-title{font-family:'Outfit',sans-serif;font-size:14px;font-weight:700;color:#0a1628;margin-bottom:14px;display:flex;align-items:center;gap:8px;letter-spacing:0.3px;}
+.card-title .dot{width:6px;height:6px;border-radius:50%;background:#00c9a7;}
+.input-field{width:100%;padding:11px 14px;border:1.5px solid rgba(0,30,60,0.07);border-radius:10px;background:#fff;color:#0a1628;font-size:13px;font-family:'DM Sans',sans-serif;outline:none;transition:border-color .2s,box-shadow .2s;}
+.input-field:focus{border-color:#00c9a7;box-shadow:0 0 0 3px rgba(0,201,167,0.1);}
+.input-field::placeholder{color:#94a3b8;}
+select.input-field{appearance:none;background-image:url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%2394a3b8' stroke-width='1.5' fill='none'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;}
+.label{font-size:11px;color:#5a6a7e;margin-bottom:5px;display:block;font-weight:600;letter-spacing:0.3px;}
+.btn-primary{padding:11px 24px;border:none;border-radius:10px;background:linear-gradient(135deg,#00c9a7,#00a78e);color:#fff;font-size:13px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;box-shadow:0 4px 24px rgba(0,201,167,0.12);transition:all .2s;}
+.btn-primary:hover{box-shadow:0 8px 32px rgba(0,201,167,0.18);transform:translateY(-1px);}
+.btn-secondary{padding:8px 16px;border:1.5px solid rgba(0,30,60,0.07);border-radius:10px;background:#fff;color:#5a6a7e;font-size:12px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .2s;}
+.btn-secondary:hover{border-color:#00c9a7;color:#00c9a7;}
+.stat-pill{background:#fff;border:1px solid rgba(0,30,60,0.07);border-radius:12px;padding:14px;text-align:center;}
+.stat-pill .stat-label{font-size:10px;color:#94a3b8;font-weight:600;letter-spacing:0.5px;text-transform:uppercase;}
+.stat-pill .stat-value{font-size:17px;font-weight:800;font-family:'Outfit',sans-serif;margin-top:4px;font-feature-settings:'tnum';}
+.list-row{display:flex;justify-content:space-between;align-items:center;padding:11px 0;border-bottom:1px solid rgba(0,30,60,0.07);}.list-row:last-child{border-bottom:none;}
+.badge{display:inline-block;padding:2px 8px;border-radius:6px;font-size:9px;font-weight:700;}.repay-badge{background:rgba(255,159,28,0.1);color:#ff9f1c;}
+.progress-track{height:6px;border-radius:3px;background:#e4eaf1;overflow:hidden;}.progress-fill{height:100%;border-radius:3px;transition:width .6s cubic-bezier(.22,1,.36,1);}
+.modal-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(10,22,40,0.45);backdrop-filter:blur(6px);display:flex;align-items:center;justify-content:center;z-index:100;padding:16px;}
+.modal-box{background:#fff;border-radius:20px;padding:28px;width:100%;max-width:420px;box-shadow:0 16px 48px rgba(0,30,80,0.15);animation:fadeUp .3s ease;}
+.modal-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;}
+.modal-title{font-family:'Outfit',sans-serif;font-size:17px;font-weight:700;color:#0a1628;}
+.modal-close{background:none;border:none;font-size:20px;color:#94a3b8;cursor:pointer;padding:4px 8px;border-radius:6px;}.modal-close:hover{background:#e4eaf1;color:#0a1628;}
+.empty-state{text-align:center;padding:28px 0;color:#94a3b8;font-size:12px;}
+.icon-btn{background:none;border:none;cursor:pointer;padding:4px 6px;border-radius:6px;color:#94a3b8;font-size:14px;transition:all .15s;}.icon-btn:hover{background:#e4eaf1;color:#0a1628;}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}.grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;}
+.flex-row{display:flex;gap:8px;align-items:center;}.flex-col{display:flex;flex-direction:column;gap:10px;}
+.total-banner{margin:0 16px 14px;padding:16px 20px;border-radius:16px;position:relative;z-index:1;}
+.total-banner.assets{background:linear-gradient(135deg,rgba(0,201,167,0.08),rgba(0,87,255,0.06));border:1px solid rgba(0,201,167,0.2);}
+.total-banner.debt{background:linear-gradient(135deg,rgba(255,90,110,0.06),rgba(255,159,28,0.04));border:1px solid rgba(255,90,110,0.15);}
+.tab-toggle{display:flex;gap:4px;padding:4px;background:#e4eaf1;border-radius:10px;margin:0 16px 12px;}
+.tab-toggle button{flex:1;padding:8px 0;border:none;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .2s;}
+.tab-toggle button.active{background:#fff;color:#0a1628;box-shadow:0 1px 4px rgba(0,30,80,0.08);}
+.tab-toggle button:not(.active){background:transparent;color:#94a3b8;}
+.asset-row{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;border-radius:10px;margin-bottom:6px;background:#f0f4f8;}
+.debt-card-inner{background:linear-gradient(135deg,rgba(0,201,167,0.03),rgba(0,87,255,0.02));border:1px solid rgba(0,30,60,0.07);border-radius:12px;padding:14px;margin-top:10px;}
+</style>
+</head>
+<body>
+<div id="loading-msg">読み込み中...</div>
+<div id="error-msg"><div>⚠️ ライブラリの読み込みに失敗しました</div><div style="font-size:12px">ページをリロードしてください</div></div>
+<div id="root"></div>
+
+<script crossorigin src="https://cdn.jsdelivr.net/npm/react@18.2.0/umd/react.production.min.js"></script>
+<script crossorigin src="https://cdn.jsdelivr.net/npm/react-dom@18.2.0/umd/react-dom.production.min.js"></script>
+<script crossorigin src="https://cdn.jsdelivr.net/npm/prop-types@15.8.1/prop-types.min.js"></script>
+<script crossorigin src="https://cdn.jsdelivr.net/npm/recharts@2.12.7/umd/Recharts.min.js"></script>
+<script crossorigin src="https://cdn.jsdelivr.net/npm/@babel/standalone@7.24.0/babel.min.js"></script>
+
+<script>
+// Verify all libraries loaded
+(function(){
+  var ok = typeof React !== 'undefined' && typeof ReactDOM !== 'undefined' && typeof Recharts !== 'undefined' && typeof Babel !== 'undefined';
+  if (!ok) {
+    document.getElementById('loading-msg').style.display = 'none';
+    document.getElementById('error-msg').style.display = 'flex';
+  }
+})();
+</script>
+
+<script type="text/babel">
+if (
+  typeof React === 'undefined' ||
+  typeof ReactDOM === 'undefined' ||
+  typeof Recharts === 'undefined' ||
+  typeof Babel === 'undefined'
+) {
+  document.getElementById('loading-msg').style.display = 'none';
+  document.getElementById('error-msg').style.display = 'flex';
+  throw new Error('Required libraries failed to load.');
+}
+
+document.getElementById('loading-msg').style.display = 'none';
+
+var useState = React.useState;
+var useEffect = React.useEffect;
+var useMemo = React.useMemo;
+var PieChart = Recharts.PieChart;
+var Pie = Recharts.Pie;
+var Cell = Recharts.Cell;
+var BarChart = Recharts.BarChart;
+var Bar = Recharts.Bar;
+var XAxis = Recharts.XAxis;
+var YAxis = Recharts.YAxis;
+var Tooltip = Recharts.Tooltip;
+var ResponsiveContainer = Recharts.ResponsiveContainer;
+var Legend = Recharts.Legend;
+
+var P = "#00c9a7";
+var S = "#0057ff";
+var NEG = "#ff5a6e";
+var WARN = "#ff9f1c";
+var TXT = "#0a1628";
+var TXTSUB = "#5a6a7e";
+var TXTM = "#94a3b8";
+var BDR = "rgba(0,30,60,0.07)";
+var YEN = "\u00A5";
+
+var ASSETS = [
+  {key:"cash",label:"\u5C0F\u53E3",icon:"\uD83D\uDCB5"},
+  {key:"rakuten",label:"\u697D\u5929\u9280\u884C",icon:"\uD83C\uDFE6"},
+  {key:"mufg",label:"\u4E09\u83F1UFJ\u9280\u884C",icon:"\uD83C\uDFDB"},
+  {key:"paypay",label:"PayPay\u9280\u884C",icon:"\uD83D\uDCF1"},
+  {key:"sbi",label:"\u4F4F\u4FE1SBI\u30CD\u30C3\u30C8\u9280\u884C",icon:"\uD83C\uDF10"}
+];
+var COLORS = ["#00c9a7","#0057ff","#7c3aed","#ff9f1c","#ff5a6e","#06b6d4","#8b5cf6","#f59e0b","#ec4899","#14b8a6"];
+
+function fmt(n){return (n==null||isNaN(n))?"0":Number(n).toLocaleString("ja-JP");}
+function fmtD(d){if(!d)return"";var t=new Date(d);return t.getFullYear()+"/"+String(t.getMonth()+1).padStart(2,"0")+"/"+String(t.getDate()).padStart(2,"0");}
+function mKey(d){var t=new Date(d);return t.getFullYear()+"-"+String(t.getMonth()+1).padStart(2,"0");}
+function today(){return new Date().toISOString().slice(0,10);}
+function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,6);}
+function ld(k,fb){try{var v=localStorage.getItem(k);return v?JSON.parse(v):fb;}catch(e){return fb;}}
+function sv(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}
+function calcPO(bal,mp,ar){if(mp<=0||bal<=0)return null;var mr=ar/100/12;var rem=bal;var mo=0;while(rem>0&&mo<600){var interest=rem*mr;var principal=mp-interest;if(principal<=0)return null;rem-=principal;mo++;}var d=new Date();d.setMonth(d.getMonth()+mo);return d.toISOString().slice(0,10);}
+function findAsset(k){for(var i=0;i<ASSETS.length;i++){if(ASSETS[i].key===k)return ASSETS[i];}return{};}
+
+function Modal(props){
+  if(!props.open)return null;
+  return(
+    <div className="modal-overlay" onClick={props.onClose}>
+      <div className="modal-box" onClick={function(e){e.stopPropagation();}}>
+        <div className="modal-header">
+          <span className="modal-title">{props.title}</span>
+          <button className="modal-close" onClick={props.onClose}>{"\u2715"}</button>
+        </div>
+        {props.children}
+      </div>
+    </div>
+  );
+}
+
+function BudgetSection(props){
+  var expenses=props.expenses,setExpenses=props.setExpenses,incomes=props.incomes,setIncomes=props.setIncomes,assets=props.assets,setAssets=props.setAssets;
+  var s=useState;
+  var _tab=s("expense"),tab=_tab[0],setTab=_tab[1];
+  var _ei=s(""),expItem=_ei[0],setExpItem=_ei[1];
+  var _ea=s(""),expAmt=_ea[0],setExpAmt=_ea[1];
+  var _ed=s(today()),expDate=_ed[0],setExpDate=_ed[1];
+  var _eas=s("cash"),expAs=_eas[0],setExpAs=_eas[1];
+  var _is=s(""),incSrc=_is[0],setIncSrc=_is[1];
+  var _ia=s(""),incAmt=_ia[0],setIncAmt=_ia[1];
+  var _id=s(today()),incDate=_id[0],setIncDate=_id[1];
+  var _ias=s("rakuten"),incAs=_ias[0],setIncAs=_ias[1];
+  var _ea2=s(null),editAs=_ea2[0],setEditAs=_ea2[1];
+  var _ev=s(""),editVal=_ev[0],setEditVal=_ev[1];
+
+  function addExp(){if(!expItem||!expAmt)return;var a=Number(expAmt);var n={};n[expAs]=(assets[expAs]||0)-a;setExpenses([{id:uid(),item:expItem,amount:a,date:expDate,asset:expAs}].concat(expenses));setAssets(Object.assign({},assets,n));setExpItem("");setExpAmt("");}
+  function addInc(){if(!incSrc||!incAmt)return;var a=Number(incAmt);var n={};n[incAs]=(assets[incAs]||0)+a;setIncomes([{id:uid(),source:incSrc,amount:a,date:incDate,asset:incAs}].concat(incomes));setAssets(Object.assign({},assets,n));setIncSrc("");setIncAmt("");}
+  function delE(e){var n={};n[e.asset]=(assets[e.asset]||0)+e.amount;setExpenses(expenses.filter(function(x){return x.id!==e.id;}));setAssets(Object.assign({},assets,n));}
+  function delI(i){var n={};n[i.asset]=(assets[i.asset]||0)-i.amount;setIncomes(incomes.filter(function(x){return x.id!==i.id;}));setAssets(Object.assign({},assets,n));}
+  function saveAs(){if(editAs==null)return;var n={};n[editAs]=Number(editVal)||0;setAssets(Object.assign({},assets,n));setEditAs(null);}
+
+  var tot=ASSETS.reduce(function(s,a){return s+(assets[a.key]||0);},0);
+
+  return(
+    <div>
+      <div className="total-banner assets fade-up">
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"baseline"}}>
+          <span style={{fontSize:11,color:TXTSUB,fontWeight:600,letterSpacing:1,textTransform:"uppercase"}}>Total Assets</span>
+          <span style={{fontSize:24,fontWeight:900,fontFamily:"'Outfit',sans-serif",color:tot>=0?P:NEG,fontFeatureSettings:"'tnum'"}}>{YEN}{fmt(tot)}</span>
+        </div>
+      </div>
+      <div className="glass-card fade-up fade-up-1">
+        <div className="card-title"><span className="dot"></span>各口座残高</div>
+        {ASSETS.map(function(a){return(
+          <div className="asset-row" key={a.key}>
+            <div className="flex-row"><span style={{fontSize:16}}>{a.icon}</span><span style={{fontSize:12,fontWeight:600}}>{a.label}</span></div>
+            <div className="flex-row">
+              <span style={{fontSize:14,fontWeight:700,fontFamily:"'Outfit',sans-serif",color:(assets[a.key]||0)>=0?TXT:NEG,fontFeatureSettings:"'tnum'"}}>{YEN}{fmt(assets[a.key]||0)}</span>
+              <button className="icon-btn" onClick={function(){setEditAs(a.key);setEditVal(String(assets[a.key]||0));}}>✎</button>
+            </div>
+          </div>
+        );})}
+      </div>
+      <Modal open={editAs!==null} onClose={function(){setEditAs(null);}} title="残高を編集">
+        <div className="flex-col">
+          <div><label className="label">{findAsset(editAs).label}の残高</label><input className="input-field" type="number" value={editVal} onChange={function(e){setEditVal(e.target.value);}}/></div>
+          <div style={{textAlign:"right",marginTop:6}}><button className="btn-primary" onClick={saveAs}>保存</button></div>
+        </div>
+      </Modal>
+      <div className="tab-toggle fade-up fade-up-2">
+        <button className={tab==="expense"?"active":""} onClick={function(){setTab("expense");}}>↓ 支出登録</button>
+        <button className={tab==="income"?"active":""} onClick={function(){setTab("income");}}>↑ 収入登録</button>
+      </div>
+      {tab==="expense"?(
+        <div className="glass-card fade-up fade-up-3"><div className="card-title"><span className="dot"></span>支出を登録</div><div className="flex-col">
+          <div><label className="label">事柄</label><input className="input-field" placeholder="例: 食費・交通費" value={expItem} onChange={function(e){setExpItem(e.target.value);}}/></div>
+          <div className="grid-2"><div><label className="label">金額</label><input className="input-field" type="number" placeholder="0" value={expAmt} onChange={function(e){setExpAmt(e.target.value);}}/></div><div><label className="label">日付</label><input className="input-field" type="date" value={expDate} onChange={function(e){setExpDate(e.target.value);}}/></div></div>
+          <div><label className="label">引き落とし口座</label><select className="input-field" value={expAs} onChange={function(e){setExpAs(e.target.value);}}>{ASSETS.map(function(a){return <option key={a.key} value={a.key}>{a.label}</option>;})}</select></div>
+          <button className="btn-primary" style={{width:"100%"}} onClick={addExp}>登録する</button>
+        </div></div>
+      ):(
+        <div className="glass-card fade-up fade-up-3"><div className="card-title"><span className="dot"></span>収入を登録</div><div className="flex-col">
+          <div><label className="label">収入先</label><input className="input-field" placeholder="例: 株式会社〇〇" value={incSrc} onChange={function(e){setIncSrc(e.target.value);}}/></div>
+          <div className="grid-2"><div><label className="label">金額</label><input className="input-field" type="number" placeholder="0" value={incAmt} onChange={function(e){setIncAmt(e.target.value);}}/></div><div><label className="label">日付</label><input className="input-field" type="date" value={incDate} onChange={function(e){setIncDate(e.target.value);}}/></div></div>
+          <div><label className="label">入金口座</label><select className="input-field" value={incAs} onChange={function(e){setIncAs(e.target.value);}}>{ASSETS.map(function(a){return <option key={a.key} value={a.key}>{a.label}</option>;})}</select></div>
+          <button className="btn-primary" style={{width:"100%"}} onClick={addInc}>登録する</button>
+        </div></div>
+      )}
+      <div className="glass-card fade-up fade-up-4">
+        <div className="card-title"><span className="dot"></span>{tab==="expense"?"最近の支出":"最近の収入"}</div>
+        {tab==="expense"?(expenses.length===0?<div className="empty-state">支出の記録がありません</div>:expenses.slice(0,20).map(function(e){return(
+          <div className="list-row" key={e.id}><div><div style={{fontSize:13,fontWeight:600}}>{e.item}</div><div style={{fontSize:10,color:TXTM}}>{fmtD(e.date)} ・ {findAsset(e.asset).label}</div></div><div className="flex-row"><span style={{fontSize:14,fontWeight:700,fontFamily:"'Outfit',sans-serif",color:NEG}}>-{YEN}{fmt(e.amount)}</span><button className="icon-btn" onClick={function(){delE(e);}}>✕</button></div></div>
+        );})):(incomes.length===0?<div className="empty-state">収入の記録がありません</div>:incomes.slice(0,20).map(function(i){return(
+          <div className="list-row" key={i.id}><div><div style={{fontSize:13,fontWeight:600}}>{i.source}</div><div style={{fontSize:10,color:TXTM}}>{fmtD(i.date)} ・ {findAsset(i.asset).label}</div></div><div className="flex-row"><span style={{fontSize:14,fontWeight:700,fontFamily:"'Outfit',sans-serif",color:P}}>+{YEN}{fmt(i.amount)}</span><button className="icon-btn" onClick={function(){delI(i);}}>✕</button></div></div>
+        );}))}
+      </div>
+    </div>
+  );
+}
+
+function DebtSection(props){
+  var debts=props.debts,setDebts=props.setDebts,repayments=props.repayments,setRepayments=props.setRepayments,assets=props.assets,setAssets=props.setAssets;
+  var _1=useState(false),showAdd=_1[0],setShowAdd=_1[1];
+  var _2=useState(""),nm=_2[0],setNm=_2[1];
+  var _3=useState(""),bal=_3[0],setBal=_3[1];
+  var _4=useState(""),rt=_4[0],setRt=_4[1];
+  var _5=useState(""),mo=_5[0],setMo=_5[1];
+  var _6=useState("25"),pd=_6[0],setPd=_6[1];
+  var _7=useState("rakuten"),pa=_7[0],setPa=_7[1];
+  var _8=useState(null),rm=_8[0],setRm=_8[1];
+  var _9=useState(""),ra=_9[0],setRa=_9[1];
+  var _10=useState(today()),rd=_10[0],setRd=_10[1];
+  var _11=useState("rakuten"),ras=_11[0],setRas=_11[1];
+  var _12=useState(false),ie=_12[0],setIe=_12[1];
+  var _13=useState(null),em=_13[0],setEm=_13[1];
+  var _14=useState(""),emo=_14[0],setEmo=_14[1];
+  var _15=useState(""),ert=_15[0],setErt=_15[1];
+  var _16=useState(""),epd=_16[0],setEpd=_16[1];
+
+  function addD(){if(!nm||!bal)return;setDebts(debts.concat([{id:uid(),name:nm,originalBalance:Number(bal),currentBalance:Number(bal),rate:Number(rt)||0,monthlyPayment:Number(mo)||0,payDay:Number(pd)||25,asset:pa}]));setShowAdd(false);setNm("");setBal("");setRt("");setMo("");setPd("25");}
+  function delD(id){setDebts(debts.filter(function(d){return d.id!==id;}));setRepayments(repayments.filter(function(r){return r.debtId!==id;}));}
+  function doR(){if(!rm||!ra)return;var a=Number(ra);setRepayments([{id:uid(),debtId:rm.id,amount:a,date:rd,asset:ras,isExtra:ie}].concat(repayments));setDebts(debts.map(function(d){return d.id===rm.id?Object.assign({},d,{currentBalance:Math.max(0,d.currentBalance-a)}):d;}));var n={};n[ras]=(assets[ras]||0)-a;setAssets(Object.assign({},assets,n));setRm(null);setRa("");setIe(false);}
+  function saveE(){if(!em)return;setDebts(debts.map(function(d){if(d.id!==em.id)return d;return Object.assign({},d,{monthlyPayment:Number(emo)||d.monthlyPayment,rate:Number(ert)>=0?Number(ert):d.rate,payDay:Number(epd)||d.payDay});}));setEm(null);}
+
+  var totD=debts.reduce(function(s,d){return s+d.currentBalance;},0);
+  var totO=debts.reduce(function(s,d){return s+d.originalBalance;},0);
+  var pct=totO>0?((totO-totD)/totO*100):0;
+
+  return(
+    <div>
+      <div className="total-banner debt fade-up">
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"baseline",marginBottom:10}}>
+          <span style={{fontSize:11,color:TXTSUB,fontWeight:600,letterSpacing:1,textTransform:"uppercase"}}>Total Debt</span>
+          <span style={{fontSize:24,fontWeight:900,fontFamily:"'Outfit',sans-serif",color:NEG,fontFeatureSettings:"'tnum'"}}>{YEN}{fmt(totD)}</span>
+        </div>
+        <div className="progress-track"><div className="progress-fill" style={{width:pct+"%",background:"linear-gradient(90deg,#00c9a7,#0057ff)"}}></div></div>
+        <div style={{fontSize:10,color:TXTSUB,marginTop:5,textAlign:"right",fontWeight:600}}>返済進捗 {pct.toFixed(1)}%</div>
+      </div>
+      {debts.map(function(d,idx){
+        var dp=d.originalBalance>0?((d.originalBalance-d.currentBalance)/d.originalBalance*100):0;
+        var po=calcPO(d.currentBalance,d.monthlyPayment,d.rate);
+        var dr=repayments.filter(function(r){return r.debtId===d.id;});
+        return(
+          <div className={"glass-card fade-up fade-up-"+Math.min(idx+1,4)} key={d.id}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
+              <div><div style={{fontSize:15,fontWeight:700,fontFamily:"'Outfit',sans-serif"}}>{d.name}</div><div style={{fontSize:10,color:TXTM,marginTop:3}}>利率 {d.rate}% ・ 毎月{d.payDay}日 ・ 月額 {YEN}{fmt(d.monthlyPayment)}</div></div>
+              <div className="flex-row"><button className="icon-btn" onClick={function(){setEm(d);setEmo(String(d.monthlyPayment));setErt(String(d.rate));setEpd(String(d.payDay));}}>✎</button><button className="icon-btn" onClick={function(){delD(d.id);}}>✕</button></div>
+            </div>
+            <div className="debt-card-inner">
+              <div className="grid-2">
+                <div><div style={{fontSize:10,color:TXTM,fontWeight:600}}>残債額</div><div style={{fontSize:18,fontWeight:800,fontFamily:"'Outfit',sans-serif",color:NEG,marginTop:2,fontFeatureSettings:"'tnum'"}}>{YEN}{fmt(d.currentBalance)}</div></div>
+                <div><div style={{fontSize:10,color:TXTM,fontWeight:600}}>完済予定</div><div style={{fontSize:14,fontWeight:700,fontFamily:"'Outfit',sans-serif",color:po?TXT:WARN,marginTop:2,fontFeatureSettings:"'tnum'"}}>{po?fmtD(po):"算出不可"}</div></div>
+              </div>
+              <div style={{marginTop:10}}><div className="progress-track"><div className="progress-fill" style={{width:dp+"%",background:"linear-gradient(90deg,#00c9a7,#0057ff)"}}></div></div><div style={{fontSize:10,color:TXTM,marginTop:3}}>返済済 {dp.toFixed(1)}% ({YEN}{fmt(d.originalBalance-d.currentBalance)})</div></div>
+            </div>
+            <div style={{marginTop:12}}><button className="btn-primary" onClick={function(){setRm(d);setRa(String(d.monthlyPayment));setRas(d.asset);setRd(today());setIe(false);}}>返済する</button></div>
+            {dr.length>0&&(<div style={{marginTop:12}}><div style={{fontSize:10,color:TXTM,fontWeight:700,letterSpacing:0.5,marginBottom:6}}>REPAYMENT HISTORY</div>{dr.slice(0,5).map(function(r){return(<div key={r.id} style={{display:"flex",justifyContent:"space-between",padding:"5px 0",fontSize:11,borderBottom:"1px solid "+BDR}}><span style={{color:TXTSUB}}>{fmtD(r.date)} {r.isExtra&&<span className="badge repay-badge" style={{marginLeft:4}}>繰上</span>}</span><span style={{color:P,fontWeight:700,fontFamily:"'Outfit',sans-serif"}}>-{YEN}{fmt(r.amount)}</span></div>);})}</div>)}
+          </div>
+        );
+      })}
+      {debts.length===0&&<div className="glass-card empty-state">借入先を登録してください</div>}
+      <div style={{padding:"0 16px",marginBottom:14}}><button className="btn-primary" style={{width:"100%"}} onClick={function(){setShowAdd(true);}}>＋ 借入先を追加</button></div>
+      <Modal open={showAdd} onClose={function(){setShowAdd(false);}} title="借入先を追加"><div className="flex-col">
+        <div><label className="label">借入先名</label><input className="input-field" placeholder="例: アコム" value={nm} onChange={function(e){setNm(e.target.value);}}/></div>
+        <div><label className="label">借入金額</label><input className="input-field" type="number" placeholder="0" value={bal} onChange={function(e){setBal(e.target.value);}}/></div>
+        <div className="grid-2"><div><label className="label">年利(%)</label><input className="input-field" type="number" step="0.1" placeholder="15.0" value={rt} onChange={function(e){setRt(e.target.value);}}/></div><div><label className="label">毎月返済額</label><input className="input-field" type="number" placeholder="0" value={mo} onChange={function(e){setMo(e.target.value);}}/></div></div>
+        <div className="grid-2"><div><label className="label">返済日(日)</label><input className="input-field" type="number" min="1" max="31" value={pd} onChange={function(e){setPd(e.target.value);}}/></div><div><label className="label">引落口座</label><select className="input-field" value={pa} onChange={function(e){setPa(e.target.value);}}>{ASSETS.map(function(a){return <option key={a.key} value={a.key}>{a.label}</option>;})}</select></div></div>
+        <button className="btn-primary" style={{width:"100%"}} onClick={addD}>追加する</button>
+      </div></Modal>
+      <Modal open={rm!==null} onClose={function(){setRm(null);}} title={(rm?rm.name:"")+"への返済"}><div className="flex-col">
+        <div><label className="label">返済額</label><input className="input-field" type="number" value={ra} onChange={function(e){setRa(e.target.value);}}/></div>
+        <div className="grid-2"><div><label className="label">返済日</label><input className="input-field" type="date" value={rd} onChange={function(e){setRd(e.target.value);}}/></div><div><label className="label">引落口座</label><select className="input-field" value={ras} onChange={function(e){setRas(e.target.value);}}>{ASSETS.map(function(a){return <option key={a.key} value={a.key}>{a.label}</option>;})}</select></div></div>
+        <label style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer",fontSize:12,color:TXTSUB}}><input type="checkbox" checked={ie} onChange={function(e){setIe(e.target.checked);}} style={{accentColor:P}}/>繰り上げ返済</label>
+        <button className="btn-primary" style={{width:"100%"}} onClick={doR}>返済を登録</button>
+      </div></Modal>
+      <Modal open={em!==null} onClose={function(){setEm(null);}} title={(em?em.name:"")+"の設定変更"}><div className="flex-col">
+        <div><label className="label">毎月返済額</label><input className="input-field" type="number" value={emo} onChange={function(e){setEmo(e.target.value);}}/></div>
+        <div className="grid-2"><div><label className="label">年利(%)</label><input className="input-field" type="number" step="0.1" value={ert} onChange={function(e){setErt(e.target.value);}}/></div><div><label className="label">返済日(日)</label><input className="input-field" type="number" min="1" max="31" value={epd} onChange={function(e){setEpd(e.target.value);}}/></div></div>
+        <button className="btn-primary" style={{width:"100%"}} onClick={saveE}>保存</button>
+      </div></Modal>
+    </div>
+  );
+}
+
+function ReportSection(props){
+  var expenses=props.expenses,incomes=props.incomes;
+  var now=new Date();
+  var _1=useState("monthly"),rTab=_1[0],setRTab=_1[1];
+  var _2=useState(now.getFullYear()),yr=_2[0],setYr=_2[1];
+  var _3=useState(now.getMonth()+1),mn=_3[0],setMn=_3[1];
+  function gws(d){var dt=new Date(d);var dy=dt.getDay();var diff=dt.getDate()-dy+(dy===0?-6:1);dt.setDate(diff);dt.setHours(0,0,0,0);return dt;}
+  var _4=useState(function(){return gws(new Date());}),ws=_4[0],setWs=_4[1];
+  function pw(){var d=new Date(ws);d.setDate(d.getDate()-7);setWs(d);}
+  function nw(){var d=new Date(ws);d.setDate(d.getDate()+7);setWs(d);}
+  var we=useMemo(function(){var d=new Date(ws);d.setDate(d.getDate()+6);return d;},[ws]);
+  var wl=(ws.getMonth()+1)+"/"+ws.getDate()+" \u301C "+(we.getMonth()+1)+"/"+we.getDate();
+
+  var mk=yr+"-"+String(mn).padStart(2,"0");
+  var mE=expenses.filter(function(e){return mKey(e.date)===mk;});
+  var mI=incomes.filter(function(i){return mKey(i.date)===mk;});
+  var tE=mE.reduce(function(s,e){return s+e.amount;},0);
+  var tI=mI.reduce(function(s,i){return s+i.amount;},0);
+  var net=tI-tE;
+
+  var wE=expenses.filter(function(e){var d=new Date(e.date);return d>=ws&&d<=we;});
+  var wI=incomes.filter(function(i){var d=new Date(i.date);return d>=ws&&d<=we;});
+  var wtE=wE.reduce(function(s,e){return s+e.amount;},0);
+  var wtI=wI.reduce(function(s,i){return s+i.amount;},0);
+  var wNet=wtI-wtE;
+
+  function bPie(exps){var m={};exps.forEach(function(e){m[e.item]=(m[e.item]||0)+e.amount;});return Object.keys(m).map(function(k){return{name:k,value:m[k]};}).sort(function(a,b){return b.value-a.value;});}
+  var dn=["月","火","水","木","金","土","日"];
+  var dd=useMemo(function(){var data=[];for(var i=0;i<7;i++){var d=new Date(ws);d.setDate(d.getDate()+i);var ds=d.toISOString().slice(0,10);var exp=expenses.filter(function(e){return e.date===ds;}).reduce(function(s,e){return s+e.amount;},0);var inc=incomes.filter(function(e){return e.date===ds;}).reduce(function(s,e){return s+e.amount;},0);data.push({day:(d.getMonth()+1)+"/"+d.getDate()+"("+dn[i]+")","\u652F\u51FA":exp,"\u53CE\u5165":inc,_d:ds});}return data;},[ws,expenses,incomes]);
+  var td=useMemo(function(){var data=[];for(var i=5;i>=0;i--){var d=new Date(yr,mn-1-i,1);var k=d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0");var exp=expenses.filter(function(e){return mKey(e.date)===k;}).reduce(function(s,e){return s+e.amount;},0);var inc=incomes.filter(function(e){return mKey(e.date)===k;}).reduce(function(s,e){return s+e.amount;},0);data.push({month:(d.getMonth()+1)+"\u6708","\u53CE\u5165":inc,"\u652F\u51FA":exp});}return data;},[yr,mn,expenses,incomes]);
+
+  function pM(){if(mn===1){setMn(12);setYr(yr-1);}else setMn(mn-1);}
+  function nM(){if(mn===12){setMn(1);setYr(yr+1);}else setMn(mn+1);}
+  var ts={background:"#fff",border:"1px solid rgba(0,30,60,0.07)",borderRadius:10,fontSize:12,color:"#0a1628"};
+
+  function rSum(ti,te,tn){return(
+    <div className="grid-3" style={{padding:"0 16px",marginBottom:14}}>
+      {[{l:"収入",v:ti,c:P},{l:"支出",v:te,c:NEG},{l:"収支",v:tn,c:tn>=0?P:NEG}].map(function(x){return(<div className="stat-pill" key={x.l}><div className="stat-label">{x.l}</div><div className="stat-value" style={{color:x.c}}>{YEN}{fmt(x.v)}</div></div>);})}
+    </div>
+  );}
+  function rRat(ti,te){if(ti<=0&&te<=0)return null;var t=ti+te;return(
+    <div className="glass-card fade-up fade-up-2"><div className="card-title"><span className="dot"></span>収支比率</div>
+      <div style={{display:"flex",borderRadius:8,overflow:"hidden",height:28}}>
+        {ti>0&&<div style={{flex:ti,background:"linear-gradient(90deg,#00c9a7,#0057ff)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,fontWeight:700,color:"#fff"}}>収入 {((ti/t)*100).toFixed(0)}%</div>}
+        {te>0&&<div style={{flex:te,background:"linear-gradient(90deg,#ff5a6e,#ff8fa0)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,fontWeight:700,color:"#fff"}}>支出 {((te/t)*100).toFixed(0)}%</div>}
+      </div>
+    </div>
+  );}
+  function rPie(data){if(data.length===0)return null;return(
+    <div className="glass-card fade-up fade-up-3"><div className="card-title"><span className="dot"></span>支出内訳</div>
+      <ResponsiveContainer width="100%" height={190}><PieChart><Pie data={data} dataKey="value" cx="50%" cy="50%" outerRadius={72} innerRadius={38} paddingAngle={2} strokeWidth={0}>{data.map(function(_,i){return <Cell key={i} fill={COLORS[i%COLORS.length]}/>;})}</Pie><Tooltip formatter={function(v){return YEN+fmt(v);}} contentStyle={ts}/></PieChart></ResponsiveContainer>
+      <div style={{display:"flex",flexWrap:"wrap",gap:6,marginTop:6}}>{data.map(function(d,i){return(<span key={i} style={{fontSize:10,color:TXTSUB,display:"flex",alignItems:"center",gap:4}}><span style={{width:8,height:8,borderRadius:3,background:COLORS[i%COLORS.length],display:"inline-block"}}></span>{d.name} {YEN}{fmt(d.value)}</span>);})}</div>
+    </div>
+  );}
+
+  return(
+    <div>
+      <div className="tab-toggle fade-up">
+        <button className={rTab==="monthly"?"active":""} onClick={function(){setRTab("monthly");}}>月次レポート</button>
+        <button className={rTab==="weekly"?"active":""} onClick={function(){setRTab("weekly");}}>週間レポート</button>
+      </div>
+      {rTab==="monthly"?(
+        <div>
+          <div className="glass-card fade-up fade-up-1" style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}><button className="btn-secondary" onClick={pM}>◀</button><span style={{fontSize:16,fontWeight:700,fontFamily:"'Outfit',sans-serif"}}>{yr}年 {mn}月</span><button className="btn-secondary" onClick={nM}>▶</button></div>
+          {rSum(tI,tE,net)}{rRat(tI,tE)}{rPie(bPie(mE))}
+          {td.some(function(d){return d["\u53CE\u5165"]>0||d["\u652F\u51FA"]>0;})&&(
+            <div className="glass-card fade-up fade-up-4"><div className="card-title"><span className="dot"></span>月次推移（直近6ヶ月）</div>
+              <ResponsiveContainer width="100%" height={200}><BarChart data={td} barGap={3}><XAxis dataKey="month" tick={{fill:TXTM,fontSize:10}} axisLine={false} tickLine={false}/><YAxis tick={{fill:TXTM,fontSize:10}} axisLine={false} tickLine={false} width={48} tickFormatter={function(v){return(v/10000).toFixed(0)+"万";}}/><Tooltip formatter={function(v){return YEN+fmt(v);}} contentStyle={ts}/><Legend wrapperStyle={{fontSize:10}}/><Bar dataKey={"\u53CE\u5165"} fill={P} radius={[4,4,0,0]}/><Bar dataKey={"\u652F\u51FA"} fill={NEG} radius={[4,4,0,0]}/></BarChart></ResponsiveContainer>
+            </div>
+          )}
+          {tI===0&&tE===0&&<div className="glass-card empty-state">{yr}年{mn}月のデータがありません</div>}
+        </div>
+      ):(
+        <div>
+          <div className="glass-card fade-up fade-up-1" style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}><button className="btn-secondary" onClick={pw}>◀</button><span style={{fontSize:15,fontWeight:700,fontFamily:"'Outfit',sans-serif"}}>{wl}</span><button className="btn-secondary" onClick={nw}>▶</button></div>
+          {rSum(wtI,wtE,wNet)}{rRat(wtI,wtE)}
+          {dd.some(function(d){return d["\u652F\u51FA"]>0||d["\u53CE\u5165"]>0;})&&(
+            <div className="glass-card fade-up fade-up-2"><div className="card-title"><span className="dot"></span>日別推移</div>
+              <ResponsiveContainer width="100%" height={200}><BarChart data={dd} barGap={2}><XAxis dataKey="day" tick={{fill:TXTM,fontSize:9}} axisLine={false} tickLine={false}/><YAxis tick={{fill:TXTM,fontSize:10}} axisLine={false} tickLine={false} width={48} tickFormatter={function(v){return v>=10000?(v/10000).toFixed(0)+"万":(v/1000).toFixed(0)+"千";}}/><Tooltip formatter={function(v){return YEN+fmt(v);}} contentStyle={ts}/><Legend wrapperStyle={{fontSize:10}}/><Bar dataKey={"\u53CE\u5165"} fill={P} radius={[4,4,0,0]}/><Bar dataKey={"\u652F\u51FA"} fill={NEG} radius={[4,4,0,0]}/></BarChart></ResponsiveContainer>
+            </div>
+          )}
+          {rPie(bPie(wE))}
+          <div className="glass-card fade-up fade-up-3"><div className="card-title"><span className="dot"></span>日別明細</div>
+            {(function(){var has=false;var items=dd.map(function(d,i){var ds=d._d;var de=expenses.filter(function(e){return e.date===ds;});var di=incomes.filter(function(e){return e.date===ds;});if(de.length===0&&di.length===0)return null;has=true;return(<div key={i} style={{marginBottom:10}}><div style={{fontSize:11,fontWeight:700,color:P,marginBottom:4,letterSpacing:0.5}}>{d.day}</div>{di.map(function(inc){return(<div key={inc.id} style={{display:"flex",justifyContent:"space-between",padding:"3px 0",fontSize:12}}><span style={{color:TXTSUB}}>{inc.source}</span><span style={{color:P,fontWeight:700,fontFamily:"'Outfit',sans-serif"}}>+{YEN}{fmt(inc.amount)}</span></div>);})}{de.map(function(exp){return(<div key={exp.id} style={{display:"flex",justifyContent:"space-between",padding:"3px 0",fontSize:12}}><span style={{color:TXTSUB}}>{exp.item}</span><span style={{color:NEG,fontWeight:700,fontFamily:"'Outfit',sans-serif"}}>-{YEN}{fmt(exp.amount)}</span></div>);})}</div>);});if(!has)return <div className="empty-state">この週のデータがありません</div>;return items;})()}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function App(){
+  var _1=useState("budget"),pg=_1[0],setPg=_1[1];
+  var _2=useState(function(){return ld("po_expenses",[]);}),exps=_2[0],setExps=_2[1];
+  var _3=useState(function(){return ld("po_incomes",[]);}),incs=_3[0],setIncs=_3[1];
+  var _4=useState(function(){return ld("po_assets",{cash:0,rakuten:0,mufg:0,paypay:0,sbi:0});}),asts=_4[0],setAsts=_4[1];
+  var _5=useState(function(){return ld("po_debts",[]);}),dbts=_5[0],setDbts=_5[1];
+  var _6=useState(function(){return ld("po_repayments",[]);}),reps=_6[0],setReps=_6[1];
+
+  useEffect(function(){sv("po_expenses",exps);},[exps]);
+  useEffect(function(){sv("po_incomes",incs);},[incs]);
+  useEffect(function(){sv("po_assets",asts);},[asts]);
+  useEffect(function(){sv("po_debts",dbts);},[dbts]);
+  useEffect(function(){sv("po_repayments",reps);},[reps]);
+
+  return(
+    <div className="payoff-app">
+      <header className="header-gradient"><h1>PayOFF</h1><p>PERSONAL FINANCE TRACKER</p></header>
+      <nav className="nav-pills">
+        <button className={"nav-pill "+(pg==="budget"?"active":"")} onClick={function(){setPg("budget");}}>💰 家計管理</button>
+        <button className={"nav-pill "+(pg==="debt"?"active":"")} onClick={function(){setPg("debt");}}>📋 借金管理</button>
+        <button className={"nav-pill "+(pg==="report"?"active":"")} onClick={function(){setPg("report");}}>📊 レポート</button>
+      </nav>
+      {pg==="budget"&&<BudgetSection expenses={exps} setExpenses={setExps} incomes={incs} setIncomes={setIncs} assets={asts} setAssets={setAsts}/>}
+      {pg==="debt"&&<DebtSection debts={dbts} setDebts={setDbts} repayments={reps} setRepayments={setReps} assets={asts} setAssets={setAsts}/>}
+      {pg==="report"&&<ReportSection expenses={exps} incomes={incs}/>}
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
+</script>
+</body>
+</html>
